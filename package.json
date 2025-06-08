@@ -23,7 +23,6 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    // Dev dependencies
     "@eslint/js": "^9.21.0",
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.10",
