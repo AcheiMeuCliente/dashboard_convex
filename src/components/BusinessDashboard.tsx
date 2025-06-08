@@ -1,5 +1,3 @@
-// CAMINHO DO ARQUIVO: src/components/BusinessDashboard.tsx
-
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -9,13 +7,8 @@ import { CompanyFilters } from "./CompanyFilters";
 import { CompanyList } from "./CompanyList";
 import { CompanyModal } from "./CompanyModal";
 import { toast } from "sonner";
-import { Filter } from "lucide-react"; // -> ADICIONADO: Ícone de filtro
-import { Button } from "@/components/ui/button"; // -> ADICIONADO: Componente de botão que você já deve ter no projeto
 
 export function BusinessDashboard() {
-  // -> ADICIONADO: Estado para controlar a visibilidade dos filtros
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
   const [filters, setFilters] = useState({
     search: "",
     cnae: "",
@@ -35,7 +28,7 @@ export function BusinessDashboard() {
     cnae: filters.cnae || undefined,
     estado: filters.estado || undefined,
   });
-
+  
   const companiesResult = useQuery(api.companies.listCompanies, {
     paginationOpts: { numItems: pageSize, cursor: null },
     search: filters.search || undefined,
@@ -51,7 +44,7 @@ export function BusinessDashboard() {
 
   const cnaes = useQuery(api.companies.getUniqueCnaes);
   const estados = useQuery(api.companies.getUniqueEstados);
-  const municipios = useQuery(api.companies.getMunicipiosByEstado,
+  const municipios = useQuery(api.companies.getMunicipiosByEstado, 
     filters.estado ? { estado: filters.estado } : "skip"
   );
 
@@ -82,7 +75,7 @@ export function BusinessDashboard() {
   const hasNoData = stats.total === 0;
 
   return (
-    <div className="space-y-8 p-4 md:p-8">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -94,27 +87,14 @@ export function BusinessDashboard() {
           </p>
         </div>
         
-        <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-          {/* -> ADICIONADO: Botão de filtro que só aparece se houver dados */}
-          {!hasNoData && (
-             <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-          )}
-
-          {hasNoData && (
-            <button
-              onClick={handleSeedData}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Carregar Dados de Exemplo
-            </button>
-          )}
-        </div>
+        {hasNoData && (
+          <button
+            onClick={handleSeedData}
+            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Carregar Dados de Exemplo
+          </button>
+        )}
       </div>
 
       {hasNoData ? (
@@ -136,16 +116,14 @@ export function BusinessDashboard() {
           {/* Stats Cards */}
           <StatsCards stats={stats} />
 
-          {/* -> ALTERADO: O componente de filtros agora só é renderizado se isFiltersOpen for true */}
-          {isFiltersOpen && (
-            <CompanyFilters 
-              filters={filters} 
-              onFiltersChange={handleFilterChange}
-              cnaes={cnaes || []}
-              estados={estados || []}
-              municipios={municipios || []}
-            />
-          )}
+          {/* Filters */}
+          <CompanyFilters 
+            filters={filters} 
+            onFiltersChange={handleFilterChange}
+            cnaes={cnaes || []}
+            estados={estados || []}
+            municipios={municipios || []}
+          />
 
           {/* Company List */}
           <CompanyList
