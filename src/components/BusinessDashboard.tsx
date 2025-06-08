@@ -1,5 +1,3 @@
-// CAMINHO DO ARQUIVO: src/components/BusinessDashboard.tsx
-
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -9,11 +7,10 @@ import { CompanyFilters } from "./CompanyFilters";
 import { CompanyList } from "./CompanyList";
 import { CompanyModal } from "./CompanyModal";
 import { toast } from "sonner";
-import { Filter } from "lucide-react"; // -> ADICIONADO: Ícone de filtro
-import { Button } from "@/components/ui/button"; // -> ADICIONADO: Componente de botão que você já deve ter no projeto
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function BusinessDashboard() {
-  // -> ADICIONADO: Estado para controlar a visibilidade dos filtros
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const [filters, setFilters] = useState({
@@ -93,9 +90,8 @@ export function BusinessDashboard() {
             Análise completa de dados empresariais baseados em CNAEs e localização
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
-          {/* -> ADICIONADO: Botão de filtro que só aparece se houver dados */}
           {!hasNoData && (
              <Button
               variant="outline"
@@ -133,10 +129,8 @@ export function BusinessDashboard() {
         </div>
       ) : (
         <>
-          {/* Stats Cards */}
           <StatsCards stats={stats} />
 
-          {/* -> ALTERADO: O componente de filtros agora só é renderizado se isFiltersOpen for true */}
           {isFiltersOpen && (
             <CompanyFilters 
               filters={filters} 
@@ -147,7 +141,6 @@ export function BusinessDashboard() {
             />
           )}
 
-          {/* Company List */}
           <CompanyList
             companies={companiesResult.page}
             onCompanySelect={setSelectedCompanyId}
@@ -157,7 +150,6 @@ export function BusinessDashboard() {
             }}
           />
 
-          {/* Company Modal */}
           {selectedCompanyId && (
             <CompanyModal
               companyId={selectedCompanyId}
