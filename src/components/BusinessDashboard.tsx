@@ -3,9 +3,10 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { StatsCards } from "./StatsCards";
-import { CompanyFilters } from "./CompanyFilters";
-import { CompanyList } from "./CompanyList";
+import { CompanyTable } from "./CompanyTable";
+import { CompanyMap } from "./CompanyMap";
 import { CompanyModal } from "./CompanyModal";
+import { FiltersSidebar } from "./FiltersSidebar";
 import { toast } from "sonner";
 
 export function BusinessDashboard() {
@@ -22,7 +23,9 @@ export function BusinessDashboard() {
   });
   const [selectedCompanyId, setSelectedCompanyId] = useState<Id<"companies"> | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 20;
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "map">("table");
+  const pageSize = 50;
 
   const stats = useQuery(api.companies.getDashboardStats, {
     cnae: filters.cnae || undefined,
@@ -53,15 +56,88 @@ export function BusinessDashboard() {
   const handleSeedData = async () => {
     try {
       const result = await seedData({});
-      toast.success(`${result.total} empresas de exemplo criadas com sucesso!`);
+      toast.success(`${result.total} example companies created successfully!`);
     } catch (error) {
-      toast.error("Erro ao criar dados de exemplo");
+      toast.error("Error creating example data");
     }
   };
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
     setCurrentPage(0);
+  };
+
+  const handleExportData = () => {
+    if (!companiesResult?.page) return;
+    
+    // Create CSV content
+    const headers = [
+      "Company Name",
+      "Trade Name", 
+      "Primary Activity",
+      "Secondary Activity",
+      "Capital",
+      "Email",
+      "City",
+      "Neighborhood",
+      "Address",
+      "Tax ID",
+      "Website",
+      "Phone 1",
+      "Phone 2", 
+      "Phone 3",
+      "WhatsApp 1",
+      "WhatsApp 2",
+      "WhatsApp 3",
+      "State",
+      "ZIP",
+      "Size",
+      "MEI",
+      "Simples",
+      "Federal Revenue"
+    ];
+    
+    const csvContent = [
+      headers.join(","),
+      ...companiesResult.page.map(company => [
+        `"${company.razao_social}"`,
+        `"${company.nome_fantasia || ""}"`,
+        `"${company.cnae_principal_nome}"`,
+        `"${company.cnae_secundario_nome || ""}"`,
+        company.capital_social || 0,
+        `"${company.email || ""}"`,
+        `"${company.municipio}"`,
+        `"${company.bairro || ""}"`,
+        `"${company.endereco_mapa || ""}"`,
+        `"${company.cnpj}"`,
+        `"${company.site || ""}"`,
+        `"${company.telefone_1 || ""}"`,
+        `"${company.telefone_2 || ""}"`,
+        `"${company.telefone_3 || ""}"`,
+        `"${company.whatsapp_1 || ""}"`,
+        `"${company.whatsapp_2 || ""}"`,
+        `"${company.whatsapp_3 || ""}"`,
+        `"${company.estado}"`,
+        `"${company.cep || ""}"`,
+        `"${company.porte || ""}"`,
+        company.mei,
+        company.simples,
+        `"${company.receita_federal || ""}"`
+      ].join(","))
+    ].join("\n");
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `companies_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Data exported successfully!");
   };
 
   if (stats === undefined || companiesResult === undefined) {
@@ -80,21 +156,69 @@ export function BusinessDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Dashboard Empresarial Brasileiro
+            Brazilian Business Dashboard
           </h1>
           <p className="mt-2 text-gray-600">
-            Análise completa de dados empresariais baseados em CNAEs e localização
+            Complete analysis of business data based on CNAEs and location
           </p>
         </div>
         
-        {hasNoData && (
-          <button
-            onClick={handleSeedData}
-            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Carregar Dados de Exemplo
-          </button>
-        )}
+        <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+          {!hasNoData && (
+            <>
+              {/* View Mode Toggle */}
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
+                    viewMode === "table"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9" />
+                  </svg>
+                  Table
+                </button>
+                <button
+                  onClick={() => setViewMode("map")}
+                  className={`px-4 py-2 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                    viewMode === "map"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Map
+                </button>
+              </div>
+
+              {/* Filters Button */}
+              <button
+                onClick={() => setShowFilters(true)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                </svg>
+                Filters
+              </button>
+            </>
+          )}
+          
+          {hasNoData && (
+            <button
+              onClick={handleSeedData}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Load Example Data
+            </button>
+          )}
+        </div>
       </div>
 
       {hasNoData ? (
@@ -105,10 +229,10 @@ export function BusinessDashboard() {
             </svg>
           </div>
           <h3 className="mt-4 text-lg font-medium text-gray-900">
-            Nenhuma empresa cadastrada
+            No companies registered
           </h3>
           <p className="mt-2 text-gray-500">
-            Comece carregando alguns dados de exemplo para explorar o dashboard.
+            Start by loading some example data to explore the dashboard.
           </p>
         </div>
       ) : (
@@ -116,23 +240,60 @@ export function BusinessDashboard() {
           {/* Stats Cards */}
           <StatsCards stats={stats} />
 
-          {/* Filters */}
-          <CompanyFilters 
-            filters={filters} 
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              {viewMode === "table" ? (
+                <CompanyTable
+                  companies={companiesResult.page}
+                  onCompanySelect={setSelectedCompanyId}
+                  hasMore={!companiesResult.isDone}
+                  onLoadMore={() => {
+                    // Implement pagination if needed
+                  }}
+                  selectedCompanyId={selectedCompanyId}
+                  onExportData={handleExportData}
+                />
+              ) : (
+                <CompanyMap
+                  companies={companiesResult.page}
+                  selectedCompanyId={selectedCompanyId}
+                  onCompanySelect={setSelectedCompanyId}
+                />
+              )}
+            </div>
+
+            <div className="lg:col-span-1">
+              {viewMode === "map" ? (
+                <CompanyTable
+                  companies={companiesResult.page}
+                  onCompanySelect={setSelectedCompanyId}
+                  hasMore={!companiesResult.isDone}
+                  onLoadMore={() => {
+                    // Implement pagination if needed
+                  }}
+                  selectedCompanyId={selectedCompanyId}
+                  onExportData={handleExportData}
+                />
+              ) : (
+                <CompanyMap
+                  companies={companiesResult.page}
+                  selectedCompanyId={selectedCompanyId}
+                  onCompanySelect={setSelectedCompanyId}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Filters Sidebar */}
+          <FiltersSidebar
+            isOpen={showFilters}
+            onClose={() => setShowFilters(false)}
+            filters={filters}
             onFiltersChange={handleFilterChange}
             cnaes={cnaes || []}
             estados={estados || []}
             municipios={municipios || []}
-          />
-
-          {/* Company List */}
-          <CompanyList
-            companies={companiesResult.page}
-            onCompanySelect={setSelectedCompanyId}
-            hasMore={!companiesResult.isDone}
-            onLoadMore={() => {
-              // Implementar carregamento de mais páginas se necessário
-            }}
           />
 
           {/* Company Modal */}
